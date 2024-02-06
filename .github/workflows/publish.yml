@@ -1,0 +1,36 @@
+name: prod
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 6.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --no-restore
+    - name: Test
+      run: dotnet test --no-build --verbosity normal  
+
+    - name: Run dotnet format
+      run: dotnet format --verify-no-changes --verbosity diagnostic --no-restore
+
+    - name: Nuget Pack
+      run: dotnet pack -c release --version-suffix dev
+      working-directory: ./src/LandCover.ESRI/
+    - name: Nuget Push
+      run: dotnet nuget push **/*.nupkg --skip-duplicate -k ${{ secrets.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/anyways-open/index.json
+      working-directory: ./src/
+      
