@@ -113,7 +113,7 @@ public sealed class EsriLandUseTiff : IDisposable
             if (crs == null) throw new Exception("Count not load crs");
 
             _transformTo = CoordinateTransformFactory.CreateFromCoordinateSystems(SRIDReader.GetWgs84(), crs);
-            
+
             _tiff = tiff;
         }
     }
