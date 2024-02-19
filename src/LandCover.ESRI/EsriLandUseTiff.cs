@@ -62,7 +62,11 @@ public sealed class EsriLandUseTiff : IDisposable
         return (xCoord, yCoord);
     }
 
-    private void ReadTiff()
+    /// <summary>
+    /// Reads the tiff to memory if not loaded already.
+    /// </summary>
+    /// <exception cref="Exception"></exception>
+    public void ReadTiff()
     {
         if (_tiff != null) return;
 
@@ -70,16 +74,16 @@ public sealed class EsriLandUseTiff : IDisposable
         {
             if (_tiff != null) return;
 
-            _tiff = Tiff.Open(_fileName, "r");
+            var tiff = Tiff.Open(_fileName, "r");
 
-            var height = _tiff.GetField(TiffTag.IMAGELENGTH)[0].ToInt();
-            var width = _tiff.GetField(TiffTag.IMAGEWIDTH)[0].ToInt();
+            var height = tiff.GetField(TiffTag.IMAGELENGTH)[0].ToInt();
+            var width = tiff.GetField(TiffTag.IMAGEWIDTH)[0].ToInt();
             _resolution = (width, height);
 
-            _tileSize = _tiff.GetField(TiffTag.TILEWIDTH)[0].ToInt();
+            _tileSize = tiff.GetField(TiffTag.TILEWIDTH)[0].ToInt();
 
-            var modelPixelScaleTag = _tiff.GetField((TiffTag)33550);
-            var modelTiePointTag = _tiff.GetField((TiffTag)33922);
+            var modelPixelScaleTag = tiff.GetField((TiffTag)33550);
+            var modelTiePointTag = tiff.GetField((TiffTag)33922);
 
             byte[] modelPixelScale = modelPixelScaleTag[1].GetBytes();
             double pixelSizeX = BitConverter.ToDouble(modelPixelScale, 0);
@@ -91,7 +95,7 @@ public sealed class EsriLandUseTiff : IDisposable
             double originLat = BitConverter.ToDouble(modelTransformation, 32);
             _origin = (originLon, originLat);
 
-            var geoKeyDirectoryTag = _tiff.GetField(TiffTag.GEOTIFF_GEOKEYDIRECTORYTAG);
+            var geoKeyDirectoryTag = tiff.GetField(TiffTag.GEOTIFF_GEOKEYDIRECTORYTAG);
             var geoKeyDirectoryTagBytes = geoKeyDirectoryTag[1].ToByteArray();
             ushort? crsId = null;
             for (var i = 0; i < geoKeyDirectoryTagBytes.Length; i += 2)
@@ -109,6 +113,8 @@ public sealed class EsriLandUseTiff : IDisposable
             if (crs == null) throw new Exception("Count not load crs");
 
             _transformTo = CoordinateTransformFactory.CreateFromCoordinateSystems(SRIDReader.GetWgs84(), crs);
+            
+            _tiff = tiff;
         }
     }
 
