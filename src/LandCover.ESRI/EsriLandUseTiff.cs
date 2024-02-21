@@ -9,7 +9,6 @@ namespace LandCover.ESRI;
 /// </summary>
 public sealed class EsriLandUseTiff : IDisposable
 {
-    private readonly string _fileName;
     private Tiff? _tiff;
     private (double longitude, double latitude) _origin;
     private (double x, double y) _pixelSize;
@@ -25,8 +24,13 @@ public sealed class EsriLandUseTiff : IDisposable
     /// <param name="fileName">The path to the tiff file.</param>
     public EsriLandUseTiff(string fileName)
     {
-        _fileName = fileName;
+        this.FileName = fileName;
     }
+
+    /// <summary>
+    /// Gets the file name.
+    /// </summary>
+    public string FileName { get; }
 
     /// <summary>
     /// Returns the pixel value covering the given longitude/latitude or null if the tiff does not cover the pixel.
@@ -102,7 +106,7 @@ public sealed class EsriLandUseTiff : IDisposable
 
             if (_tiff != null) return;
 
-            var tiff = Tiff.Open(_fileName, "r");
+            var tiff = Tiff.Open(this.FileName, "r");
 
             var height = tiff.GetField(TiffTag.IMAGELENGTH)[0].ToInt();
             var width = tiff.GetField(TiffTag.IMAGEWIDTH)[0].ToInt();
@@ -160,7 +164,7 @@ public sealed class EsriLandUseTiff : IDisposable
         byte[]? buffer = null;
         if (cache != null)
         {
-            if (!cache.TryGetTile(_fileName, tileXCoord, tileYCoord, out buffer))
+            if (!cache.TryGetTile(this.FileName, tileXCoord, tileYCoord, out buffer))
             {
                 buffer = null;
             }
@@ -179,7 +183,7 @@ public sealed class EsriLandUseTiff : IDisposable
             {
                 _semaphore.Release();
             }
-            cache?.SetTile(_fileName, tileXCoord, tileYCoord, buffer);
+            cache?.SetTile(this.FileName, tileXCoord, tileYCoord, buffer);
         }
         var indexRev = ((y - tileYCoord) * _tileSize) + (x - tileXCoord);
 
