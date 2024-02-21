@@ -17,7 +17,7 @@ public sealed class EsriLandUseTiff : IDisposable
     private ICoordinateTransformation? _transformTo;
     private int _tileSize;
     private static readonly CoordinateTransformationFactory CoordinateTransformFactory = new();
-    private const byte ResidentialValue = 7;
+    private readonly SemaphoreSlim _semaphore = new(1);
 
     /// <summary>
     /// Creates a new ESRI land use tiff.
@@ -96,8 +96,10 @@ public sealed class EsriLandUseTiff : IDisposable
     {
         if (_tiff != null) return;
 
-        lock (this)
+        try
         {
+            _semaphore.Wait();
+
             if (_tiff != null) return;
 
             var tiff = Tiff.Open(_fileName, "r");
@@ -141,6 +143,11 @@ public sealed class EsriLandUseTiff : IDisposable
             _transformTo = CoordinateTransformFactory.CreateFromCoordinateSystems(SRIDReader.GetWgs84(), crs);
 
             _tiff = tiff;
+
+        }
+        finally
+        {
+            _semaphore.Release();
         }
     }
 
@@ -163,8 +170,16 @@ public sealed class EsriLandUseTiff : IDisposable
         if (buffer == null)
         {
             buffer = new byte[_tileSize * _tileSize];
-            _tiff.ReadTile(buffer, 0, x, y, 0, 0);
+            try
+            {
+                _semaphore.Wait();
 
+                _tiff.ReadTile(buffer, 0, x, y, 0, 0);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
             cache?.SetTile(_fileName, tileXCoord, tileYCoord, buffer);
         }
         var indexRev = ((y - tileYCoord) * _tileSize) + (x - tileXCoord);
