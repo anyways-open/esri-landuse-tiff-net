@@ -43,6 +43,32 @@ public sealed class EsriLandUseTiff : IDisposable
         return this.ReadPixel(pixel.Value.x, pixel.Value.y, cache);
     }
 
+    /// <summary>
+    /// Returns true if this tiff covers the given longitude/latitude.
+    /// </summary>
+    /// <param name="longitude">The longitude.</param>
+    /// <param name="latitude">The latitude.</param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    public bool Covers(double longitude, double latitude)
+    {
+        this.ReadTiff();
+
+        if (_transformTo == null) throw new Exception("Transform to cannot be null after reading tiff");
+        var projected = _transformTo.MathTransform.Transform(new[] { longitude, latitude });
+        var projX = projected[0];
+        var projY = projected[1];
+        var xCoord = (int)System.Math.Round((projX - _origin.longitude) / _pixelSize.x);
+        var yCoord = (int)System.Math.Round((projY - _origin.latitude) / _pixelSize.y);
+
+        if (xCoord < 0) return false;
+        if (yCoord < 0) return false;
+        if (xCoord >= _resolution.x) return false;
+        if (yCoord >= _resolution.y) return false;
+
+        return true;
+    }
+
     private (int x, int y)? ToPixel(double longitude, double latitude)
     {
         this.ReadTiff();
