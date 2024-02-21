@@ -143,7 +143,6 @@ public sealed class EsriLandUseTiff : IDisposable
             _transformTo = CoordinateTransformFactory.CreateFromCoordinateSystems(SRIDReader.GetWgs84(), crs);
 
             _tiff = tiff;
-
         }
         finally
         {
